@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "naicud-copilotcli-plugin-cc",
+  "version": "0.1.0",
+  "description": "GitHub Copilot CLI plugin for Claude Code: delegation to Copilot workers and code review.",
+  "owner": {
+    "name": "naicud"
+  },
+  "plugins": [
+    {
+      "name": "copilot",
+      "description": "Use GitHub Copilot CLI from Claude Code to review code or delegate tasks.",
+      "version": "0.1.0",
+      "author": {
+        "name": "naicud"
+      },
+      "source": "./plugins/copilot",
+      "category": "development",
+      "keywords": ["copilot", "github-copilot", "delegate", "mcp", "code-review", "multi-agent", "acp"]
+    }
+  ]
+}

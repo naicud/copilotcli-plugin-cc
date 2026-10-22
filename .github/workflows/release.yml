@@ -1,0 +1,63 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Verify version consistency
+        run: |
+          PKG=$(node -p "require('./package.json').version")
+          PLUGIN=$(node -p "require('./plugins/copilot/.claude-plugin/plugin.json').version")
+          MKT1=$(node -p "require('./.claude-plugin/marketplace.json').version")
+          MKT2=$(node -p "require('./.claude-plugin/marketplace.json').plugins[0].version")
+          TAG="${GITHUB_REF_NAME#v}"
+          echo "tag=$TAG package=$PKG plugin=$PLUGIN marketplace=$MKT1/$MKT2"
+          for v in "$PKG" "$PLUGIN" "$MKT1" "$MKT2"; do
+            if [ "$v" != "$TAG" ]; then
+              echo "::error::version mismatch: tag v$TAG vs $v"
+              exit 1
+            fi
+          done
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          awk -v ver="$TAG" '
+            $0 ~ "^## \\[" ver "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > /tmp/body.md
+          if [ ! -s /tmp/body.md ]; then
+            echo "::error::no CHANGELOG section for $TAG"
+            exit 1
+          fi
+          cat /tmp/body.md
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The release may already exist when it was cut locally before the
+          # tag was pushed; refresh its notes instead of failing with HTTP 422.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file /tmp/body.md
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file /tmp/body.md
+          fi

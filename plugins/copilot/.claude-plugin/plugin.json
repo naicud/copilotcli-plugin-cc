@@ -1,0 +1,11 @@
+{
+  "name": "copilot",
+  "version": "0.1.0",
+  "description": "Use GitHub Copilot CLI from Claude Code to review code or delegate tasks.",
+  "author": {
+    "name": "naicud"
+  },
+  "repository": "https://github.com/naicud/copilotcli-plugin-cc",
+  "license": "Apache-2.0",
+  "keywords": ["copilot", "github-copilot", "delegate", "mcp", "code-review", "multi-agent", "acp"]
+}

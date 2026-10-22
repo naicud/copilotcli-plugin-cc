@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "defaults": {
+    "tier": 1,
+    "timeoutSec": 900
+  },
+  "tiers": {
+    "0": {
+      "use": "cheap mechanical work: renames, formatting, boilerplate, simple tests (sub-1x multiplier)",
+      "models": [
+        "claude-haiku-4.5"
+      ]
+    },
+    "1": {
+      "use": "default: features, bug fixes, tests, focused refactors (1x)",
+      "models": [
+        "claude-sonnet-5.5",
+        "gpt-6-sol",
+        "gpt-5.6-terra",
+        "claude-sonnet-5"
+      ]
+    },
+    "2": {
+      "use": "hard multi-file refactors and debugging (1x, high-end models)",
+      "models": [
+        "gpt-6-astra",
+        "gpt-5.6-sol"
+      ]
+    },
+    "3": {
+      "use": "architecture and last-resort escalation (premium multiplier, use sparingly)",
+      "models": [
+        "claude-opus-5.5"
+      ]
+    }
+  },
+  "excluded": [
+    {
+      "id": "claude-opus-4.8-fast",
+      "reason": "30x multiplier; enable explicitly with /copilot:model include if you really want it"
+    }
+  ],
+  "effortPolicy": {
+    "default": "high",
+    "perTier": {
+      "0": "medium",
+      "3": "max"
+    }
+  },
+  "concurrency": {
+    "maxDelegates": 6
+  },
+  "retryPolicy": {
+    "maxAutoRetries": 2
+  },
+  "budget": {
+    "maxDailyCredits": null,
+    "maxDailyPremiumRequests": null,
+    "note": "Daily caps on what delegations may consume, in Copilot AI credits and premium requests (null = no cap). Usage is read from each session's own accounting."
+  },
+  "permissions": {
+    "allowTools": [
+      "write"
+    ],
+    "denyTools": [
+      "shell(git push)",
+      "shell(git commit)",
+      "shell(git reset)",
+      "shell(git rebase)",
+      "shell(rm -rf)",
+      "shell(sudo)"
+    ],
+    "autoApprove": [
+      "^(npm|pnpm|yarn|bun) (test|run (test|lint|build|typecheck))\\b",
+      "^(node|npx|tsc|vitest|jest|pytest|go test|cargo (test|check|build))\\b",
+      "^(cat|ls|rg|grep|find|head|tail|wc|stat|pwd|tree)\\b",
+      "^sed -n\\b",
+      "^git (status|diff|log|show|blame|rev-parse|branch|ls-files)\\b"
+    ],
+    "autoReject": [
+      "curl[^|]*\\|\\s*(sh|bash|zsh)\\b",
+      "wget[^|]*\\|\\s*(sh|bash|zsh)\\b"
+    ]
+  },
+  "contract": "# Work contract\n\nWork ONLY inside ${cwd}.\n\n## Operating rules\n- Never push, commit, rewrite git history, or change anything outside the workspace.\n- Do not touch files the task lists as out of scope.\n- Run the test command named in the task before declaring the work done.\n- Nobody will answer questions while you work: make reasonable assumptions and record them in the report.\n\n## Final report (MANDATORY)\nBEFORE you end your turn you MUST write the report file ${reportPath} (relative to ${cwd}). A task without a report counts as INCOMPLETE. The report contains:\n- First line, exactly one of: `STATUS: COMPLETED`, `STATUS: PARTIAL`, `STATUS: BLOCKED`\n- The goal, restated in one line\n- Files changed (a \"files\" list of relative paths)\n- What you did and why\n- How you verified it (command run + outcome)\n- If BLOCKED: what blocks you, verbatim, without inventing details\n"
+}

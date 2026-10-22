@@ -1,0 +1,47 @@
+name: tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        # bash expands the tests/*.test.mjs glob in the npm test script;
+        # PowerShell (the Windows default) would pass it through literally.
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Unit tests
+        run: npm test
+      - name: Syntax check all plugin scripts
+        if: runner.os != 'Windows'
+        run: |
+          find plugins -name '*.mjs' -print0 | xargs -0 -n1 node --check
+
+  mcp-smoke:
+    # Boots the MCP server over stdio against the fake Copilot CLI and runs a
+    # full delegate/wait round trip, on every OS the plugin supports.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Delegation round trip against the fake Copilot CLI
+        run: node --test tests/server-flows.test.mjs

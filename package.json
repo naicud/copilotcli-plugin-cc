@@ -1,0 +1,20 @@
+{
+  "name": "copilotcli-plugin-cc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Use GitHub Copilot CLI from Claude Code to review code or delegate tasks.",
+  "license": "Apache-2.0",
+  "author": "naicud",
+  "repository": "https://github.com/naicud/copilotcli-plugin-cc",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "test": "node scripts/test-all.mjs",
+    "test:e2e": "node plugins/copilot/scripts/e2e-delegate.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}
