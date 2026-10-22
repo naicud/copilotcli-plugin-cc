@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { ensureDir, appendLine } from "./fs.mjs";
-import { generateJobId, upsertJob, jobLogPath, jobDataPath } from "./state.mjs";
+import { generateJobId, upsertJob, jobLogPath, jobDataPath, loadState } from "./state.mjs";
 
 /**
  * Session ID of the Claude Code conversation, used to attribute jobs to the
@@ -66,11 +66,19 @@ export async function runTrackedJob(workspacePath, job, runner) {
     appendLine(logFile, `[${new Date().toISOString()}] ${message}`);
   };
 
+  // A cancellation recorded by /copilot:cancel is final: stopping the worker
+  // makes the run end one way or another, and that ending must not overwrite
+  // what the user asked for.
+  const cancelled = () => (loadState(workspacePath).jobs ?? []).find((j) => j.id === job.id)?.status === "cancelled";
+
   try {
     report("starting", `Job ${job.id} started`);
     const result = await runner({ report, log });
 
-    // Mark as completed
+    if (cancelled()) {
+      log(`Job ${job.id} finished after it was cancelled; keeping the cancellation`);
+      return result;
+    }
     upsertJob(workspacePath, {
       id: job.id,
       status: "completed",
@@ -86,6 +94,10 @@ export async function runTrackedJob(workspacePath, job, runner) {
     report("completed", `Job ${job.id} completed`);
     return result;
   } catch (err) {
+    if (cancelled()) {
+      log(`Job ${job.id} stopped after cancellation: ${err.message}`);
+      throw err;
+    }
     upsertJob(workspacePath, {
       id: job.id,
       status: "failed",
