@@ -64,8 +64,9 @@ export function writeConfig(overrides = {}) {
 
 /** A fresh git workspace with one commit. */
 export function makeWorkspace(name = "ws") {
-  // realpath: git (and so the companion) reports /private/var on macOS.
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(ROOT, `${name}-`)));
+  // Canonical path, as git (and so the companion) reports it: /private/var
+  // on macOS, long names instead of 8.3 short names on Windows.
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(ROOT, `${name}-`)));
   fs.writeFileSync(path.join(dir, "README.md"), "hello\n");
   const git = (...args) => execFileSync("git", ["-C", dir, ...args], { stdio: "ignore" });
   git("init", "-q");

@@ -1,9 +1,13 @@
 // Git utilities for the Copilot companion.
 
+import path from "node:path";
 import { runCommand } from "./process.mjs";
 
 /**
- * Get the git repository root for a given directory.
+ * Get the git repository root for a given directory, in the platform's own
+ * path form: git prints forward slashes on Windows ("C:/Users/..."), and the
+ * workspace path keys the plugin's state, so it must match what node APIs
+ * produce for the same directory.
  * @param {string} cwd
  * @returns {Promise<string|null>}
  */
@@ -13,7 +17,8 @@ export async function getGitRoot(cwd) {
     ["rev-parse", "--show-toplevel"],
     { cwd }
   );
-  return exitCode === 0 ? stdout.trim() : null;
+  const root = stdout.trim();
+  return exitCode === 0 && root ? path.resolve(root) : null;
 }
 
 /**
