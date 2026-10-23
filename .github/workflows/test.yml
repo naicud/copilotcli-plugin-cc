@@ -31,8 +31,8 @@ jobs:
           find plugins -name '*.mjs' -print0 | xargs -0 -n1 node --check
 
   mcp-smoke:
-    # Boots the MCP server over stdio against the fake Copilot CLI and runs a
-    # full delegate/wait round trip, on every OS the plugin supports.
+    # Delegation flows through the MCP request handler with real worker
+    # processes (the fake Copilot CLI), on every OS the plugin supports.
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

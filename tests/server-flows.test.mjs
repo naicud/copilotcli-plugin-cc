@@ -109,6 +109,15 @@ describe("delegate → wait", () => {
     assert.match(text, /\[tool\]/);
   });
 
+  it("flags a completed run that skipped the mandatory report", async () => {
+    const cwd = makeWorkspace();
+    const started = await call("delegate", { cwd, task: "FAKE: say done, but no report" });
+    const done = await waitDone(started.sessionID, cwd);
+    assert.equal(done.outcome, "completed");
+    assert.equal(done.reportMissing, true);
+    assert.match(done.warning, /without writing its report/);
+  });
+
   it("keeps a denied command from running while the turn carries on", async () => {
     const cwd = makeWorkspace();
     const started = await call("delegate", { cwd, task: "FAKE: exec git push origin main\nFAKE: report COMPLETED\nFAKE: say pushed nothing" });

@@ -6,7 +6,7 @@ import {
   reportPathFor,
   workerToolPolicy,
 } from "../plugins/copilot/mcp/lib/worker-prompt.mjs";
-import { permissionSubject, classifyPermission, buildAgentArgs } from "../plugins/copilot/mcp/lib/copilot-session.mjs";
+import { permissionSubject, classifyPermission, buildAgentArgs, CopilotSession } from "../plugins/copilot/mcp/lib/copilot-session.mjs";
 
 const PERMISSIONS = {
   allowTools: ["write"],
@@ -65,6 +65,13 @@ describe("permission classification", () => {
     assert.equal(classifyPermission({ rawInput: { command: "rm -rf /" } }, rules), "reject");
     assert.equal(classifyPermission({ rawInput: { command: "rm x" } }, rules), "once");
     assert.equal(classifyPermission({ rawInput: { command: "make" } }, rules), null);
+  });
+
+  it("describes tool calls with workspace-relative paths", () => {
+    const s = new CopilotSession({ cwd: "/work/repo" });
+    assert.equal(s.describeTool({ kind: "execute", command: "ls /work/repo/src" }), "$ ls src");
+    assert.equal(s.describeTool({ kind: "edit", path: "/work/repo/src/a.js", title: "Editing ...repo/src/a.js" }), "edit src/a.js");
+    assert.equal(s.describeTool({ kind: "fetch", title: "Fetch docs" }), "fetch Fetch docs");
   });
 
   it("builds the worker command line", () => {

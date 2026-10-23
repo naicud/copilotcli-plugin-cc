@@ -16,11 +16,11 @@ A good Copilot task prompt should:
 3. **Define success criteria** -- How do we know it's done?
 4. **Set constraints** -- What should NOT be changed?
 
-## Agent Selection
+## Write vs read-only
 
-Copilot has two primary agents:
-- **build** (default): Full read/write access, can execute commands, edit files, and make changes
-- **plan**: Read-only analysis mode, good for investigation and architecture planning
+- Rescue tasks (`/copilot:rescue`) are write-capable by default; add `--read-only` for investigation, diagnosis or research that must not edit files.
+- MCP delegations run as a **builder** (may edit the workspace) unless `persona: "reviewer"` is passed — a read-only worker that may only write its report.
+- Never rely on the prompt alone to keep a worker read-only: pick the read-only mode, which is enforced by the worker's tool rules.
 
 ## Best Practices
 

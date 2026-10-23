@@ -8,8 +8,9 @@
 //
 //   node plugins/copilot/scripts/e2e-delegate.mjs [--model <id>] [--effort <level>] [--keep]
 //
-// Defaults to the cheapest selectable model. Exit code 0 means every check
-// passed; the workspace is removed unless --keep is given.
+// Defaults to claude-haiku-5.5 (falling back to the cheapest selectable model
+// when the account lacks it). Exit code 0 means every check passed; the
+// workspace is removed unless --keep is given.
 
 import { spawn, execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -65,7 +66,10 @@ try {
   await rpc("initialize", { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "e2e", version: "0" } });
   const models = await tool("models", { cwd: ws });
   check("live catalog", models.live && models.models.length > 0, `${models.models.length} models`);
-  const model = flag("model") ?? [...models.models].sort((a, b) => (a.multiplier ?? 1) - (b.multiplier ?? 1))[0]?.id;
+  const preferred = flag("model") ?? "claude-haiku-5.5";
+  const model = models.models.some((m) => m.id === preferred)
+    ? preferred
+    : [...models.models].sort((a, b) => (a.multiplier ?? 1) - (b.multiplier ?? 1))[0]?.id;
 
   const started = await tool("delegate", {
     cwd: ws,

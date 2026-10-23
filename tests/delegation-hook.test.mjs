@@ -172,4 +172,22 @@ describe("delegation-context-hook — tool names", () => {
     assert.match(ctx, /delegate-2/);
     assert.match(ctx, /sess-2/);
   });
+
+  it("reports every session of a waitAll batch that needs attention", () => {
+    const res = runHook({
+      tool_name: "mcp__plugin_copilot_cp__waitAll",
+      ...mcpResult({
+        results: [
+          { status: "idle", outcome: "completed", sessionID: "s-1", jobId: "delegate-1", response: "done one" },
+          { status: "needsInput", sessionID: "s-2", permissions: [{ id: "p9", kind: "execute", command: "make deploy" }] },
+        ],
+        summary: { total: 2 },
+      }),
+    });
+    const ctx = JSON.parse(res.stdout).hookSpecificOutput.additionalContext;
+    assert.match(ctx, /\[session s-1 \/ job delegate-1\]/);
+    assert.match(ctx, /done one/);
+    assert.match(ctx, /\[session s-2\]/);
+    assert.match(ctx, /make deploy/);
+  });
 });

@@ -79,6 +79,9 @@ function buildReviewContext(diff, status, changedFiles) {
 
   if (status) {
     sections.push(`<git_status>\n${status}\n</git_status>`);
+    if (/^\?\? /m.test(status)) {
+      sections.push("Untracked files (`??` above) have no diff below: read them from the repository before judging them.");
+    }
   }
 
   if (changedFiles.length > 0) {

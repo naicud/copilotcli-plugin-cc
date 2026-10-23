@@ -17,24 +17,27 @@ describe("activity sink", () => {
     assert.deepEqual(sink.tail("delegate-1", 10).length, 3, "job id and session id share one buffer");
   });
 
-  it("flushes a streamed line at a newline", () => {
+  it("closes a streamed line at the newline and keeps the rest open", () => {
     const sink = createActivitySink();
     sink.bind("/w", "delegate-2");
-    sink.record("delegate-2", "assistant", "line one\n");
-    sink.record("delegate-2", "assistant", "line two");
-    assert.equal(sink.tail("delegate-2", 10).length, 2);
+    sink.record("delegate-2", "assistant", "line one\nline t");
+    sink.record("delegate-2", "assistant", "wo continues");
+    const lines = sink.tail("delegate-2", 10).map((l) => l.replace(/^\[[\d:.]+\] /, ""));
+    assert.deepEqual(lines, ["[assistant] line one", "[assistant] line two continues"]);
   });
 
-  it("summarizes reasoning, tool and text for progress frames", () => {
+  it("summarizes the most recent activity for progress frames", () => {
     const sink = createActivitySink();
     sink.bind("/w", "delegate-3", "sess-3");
     sink.record("delegate-3", "reasoning", "planning the change");
     sink.record("delegate-3", "tool", "edit src/a.js (completed)");
-    sink.record("delegate-3", "assistant", "patched it");
-    const summary = sink.summary("sess-3");
-    assert.match(summary, /planning the change/);
-    assert.match(summary, /edit src\/a\.js/);
-    assert.match(summary, /patched it/);
+    assert.equal(sink.summary("sess-3"), "tool: edit src/a.js (completed)");
+    sink.record("delegate-3", "assistant", "patch");
+    assert.equal(sink.summary("sess-3"), "tool: edit src/a.js (completed)", "a fresh fragment does not replace the last full line");
+    sink.record("delegate-3", "assistant", "ed src/a.js and every caller of the helper");
+    assert.equal(sink.summary("sess-3"), "assistant: patched src/a.js and every caller of the helper", "a streaming line wins once it says something");
+    sink.record("delegate-3", "lifecycle", "turn 1 ended");
+    assert.equal(sink.summary("sess-3"), "assistant: patched src/a.js and every caller of the helper", "lifecycle notes are not activity");
   });
 
   it("ignores records without a job id", () => {

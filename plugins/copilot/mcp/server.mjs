@@ -384,8 +384,13 @@ async function startJob(opts) {
     unmatched: "ask",
     onActivity: (kind, text) => activitySink.record(jobId, kind, text),
     onTurnEnd: (turn) => {
-      entry.finalizing = finalizeTurn(entry, turn).catch((err) => {
+      entry.finalizing = finalizeTurn(entry, turn).catch(async (err) => {
         emitLog("error", `finalizing job ${jobId} failed — ${err.message}`, { force: true });
+        // Never leave a job neither running nor finished: record the failure.
+        if (!entry.terminal) {
+          const error = { name: "FinalizeError", message: `could not finalize the turn: ${err.message}` };
+          await terminate(entry, turn, "failed", { errorMessage: error.message, error }).catch(() => {});
+        }
       });
     },
   });
@@ -794,6 +799,9 @@ function idleResult(sessionID, entry, job, jobCwd) {
     };
   }
   const report = job && outcome?.status === "completed" ? readReportSnapshot(jobCwd, job.id) : null;
+  // The contract makes the report mandatory; a "completed" turn without one
+  // is a contract breach the supervisor must see, not a silent success.
+  const reportMissing = Boolean(job && outcome?.status === "completed" && !report);
   return {
     status: "idle",
     outcome: outcome?.status ?? job?.status ?? "unknown",
@@ -805,6 +813,7 @@ function idleResult(sessionID, entry, job, jobCwd) {
     error: outcome?.error ?? null,
     ...(outcome?.escalation ? { escalation: outcome.escalation } : {}),
     ...(report ? { report } : {}),
+    ...(reportMissing ? { reportMissing: true, warning: `the worker finished without writing its report (${reportPathFor(jobCwd, job.id)}); treat the run as unverified` } : {}),
     aiCredits: job?.aiCredits ?? outcome?.accounting?.aiCredits ?? null,
     premiumRequests: job?.premiumRequests ?? outcome?.accounting?.premiumRequests ?? null,
     tokens: job?.tokens ?? null,

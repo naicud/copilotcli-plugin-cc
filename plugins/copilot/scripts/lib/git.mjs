@@ -36,20 +36,24 @@ export async function getCurrentBranch(cwd) {
 }
 
 /**
- * Get the diff for review, supporting base-branch and working-tree modes.
+ * Get the diff for review.
+ * - base given: the branch's own changes, `base...HEAD`;
+ * - otherwise the whole working tree against HEAD, staged and unstaged
+ *   alike (a plain `git diff` would silently skip staged changes); in a repo
+ *   without commits yet, the staged plus unstaged diffs.
+ * Untracked files have no diff; they are listed by getStatus/getChangedFiles.
  * @param {string} cwd
  * @param {{ base?: string, cached?: boolean }} opts
  * @returns {Promise<string>}
  */
 export async function getDiff(cwd, opts = {}) {
-  const args = ["diff"];
-  if (opts.base) {
-    args.push(`${opts.base}...HEAD`);
-  } else if (opts.cached) {
-    args.push("--cached");
-  }
-  const { stdout } = await runCommand("git", args, { cwd });
-  return stdout;
+  if (opts.base) return (await runCommand("git", ["diff", `${opts.base}...HEAD`], { cwd })).stdout;
+  if (opts.cached) return (await runCommand("git", ["diff", "--cached"], { cwd })).stdout;
+  const againstHead = await runCommand("git", ["diff", "HEAD"], { cwd });
+  if (againstHead.exitCode === 0) return againstHead.stdout;
+  const staged = await runCommand("git", ["diff", "--cached"], { cwd });
+  const unstaged = await runCommand("git", ["diff"], { cwd });
+  return [staged.stdout, unstaged.stdout].filter((d) => d.trim()).join("\n");
 }
 
 /**
@@ -84,16 +88,17 @@ export async function getStatus(cwd) {
 }
 
 /**
- * Get the list of changed files.
+ * Get the list of changed files: the branch's files against `base`, or the
+ * working tree's tracked changes against HEAD plus untracked files.
  * @param {string} cwd
  * @param {{ base?: string }} opts
  * @returns {Promise<string[]>}
  */
 export async function getChangedFiles(cwd, opts = {}) {
-  const args = ["diff", "--name-only"];
-  if (opts.base) {
-    args.push(`${opts.base}...HEAD`);
-  }
-  const { stdout } = await runCommand("git", args, { cwd });
-  return stdout.trim().split("\n").filter(Boolean);
+  const lines = (out) => out.trim().split("\n").map((l) => l.trim()).filter(Boolean);
+  if (opts.base) return lines((await runCommand("git", ["diff", "--name-only", `${opts.base}...HEAD`], { cwd })).stdout);
+  let tracked = await runCommand("git", ["diff", "--name-only", "HEAD"], { cwd });
+  if (tracked.exitCode !== 0) tracked = await runCommand("git", ["diff", "--name-only", "--cached"], { cwd });
+  const untracked = await runCommand("git", ["ls-files", "--others", "--exclude-standard"], { cwd });
+  return [...new Set([...lines(tracked.stdout), ...lines(untracked.stdout)])];
 }

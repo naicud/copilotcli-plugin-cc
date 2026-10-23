@@ -57,7 +57,7 @@ export async function runDiagnostics({ cwd = process.cwd(), config = null, check
   } else {
     await guarded("copilot-binary", async () => {
       version = await getCopilotVersion();
-      if (!version) throw new Error("copilot CLI not found (install: npm i -g @github/copilot, brew install copilot-cli, or winget install GitHub.Copilot)");
+      if (!version) throw new Error("copilot CLI not found (install: npm i -g @github/copilot or brew install --cask copilot-cli)");
       if (compareVersions(version, MIN_COPILOT_VERSION) < 0) {
         add("copilot-binary", "warn", `copilot ${version} is older than ${MIN_COPILOT_VERSION}, the oldest release this plugin was verified against — run \`copilot update\``);
       } else {

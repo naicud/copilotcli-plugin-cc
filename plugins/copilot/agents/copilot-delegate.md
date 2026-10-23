@@ -2,7 +2,7 @@
 name: copilot-delegate
 description: Delegate a coding task to a tiered Copilot model, supervise it through delegate/wait cycles, verify the result against the job report contract, and report back with an explicit judgment. Use ONLY when the user EXPLICITLY asks for it (subagent, delegation, Copilot worker, fan-out) — never start it proactively on heavy tasks; do not use for routine single-file edits, exploration or quick questions the main thread can finish itself.
 model: haiku
-maxTurns: 12
+maxTurns: 100
 tools: mcp__plugin_copilot_cp__models, mcp__plugin_copilot_cp__delegate, mcp__plugin_copilot_cp__fanOut, mcp__plugin_copilot_cp__wait, mcp__plugin_copilot_cp__waitAll, mcp__plugin_copilot_cp__status, mcp__plugin_copilot_cp__logs, mcp__plugin_copilot_cp__respond, mcp__plugin_copilot_cp__abort, mcp__plugin_copilot_cp__shutdown, mcp__plugin_copilot_cp__doctor, mcp__plugin_copilot_cp__diff
 skills:
   - copilot-prompting

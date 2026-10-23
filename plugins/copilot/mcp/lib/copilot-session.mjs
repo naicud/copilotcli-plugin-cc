@@ -11,6 +11,8 @@
 // status, the current turn's streamed text/reasoning/tool calls, the todo
 // plan, and the permission requests waiting for a decision.
 
+import fs from "node:fs";
+import path from "node:path";
 import { spawnAcpAgent, ACP_PROTOCOL_VERSION, AcpError } from "./acp-client.mjs";
 import { resolveCopilotCommand } from "../../scripts/lib/copilot-bin.mjs";
 
@@ -123,6 +125,24 @@ export class CopilotSession {
     this.waiters = new Set();
     this.lastActivityAt = Date.now();
     this.permissionLog = [];
+    // Paths inside the workspace are shown relative to it in activity lines.
+    let real = this.cwd;
+    try {
+      real = fs.realpathSync.native(this.cwd);
+    } catch {}
+    this.cwdPrefixes = [...new Set([this.cwd, real])].filter(Boolean).map((p) => p.replace(/[\\/]+$/, "") + path.sep);
+  }
+
+  /** Text with workspace paths made relative, for display only. */
+  relative(text) {
+    return this.cwdPrefixes.reduce((t, prefix) => t.split(prefix).join(""), String(text));
+  }
+
+  /** Human-readable one-liner for a tool call: `$ cmd`, `edit src/a.js`, or the title. */
+  describeTool(entry) {
+    if (entry.command) return `$ ${this.relative(entry.command)}`;
+    if (entry.path) return `${entry.kind ?? "tool"} ${this.relative(entry.path)}`;
+    return `${entry.kind ?? "tool"} ${this.relative(entry.title ?? "")}`.trim();
   }
 
   async open() {
@@ -278,7 +298,7 @@ export class CopilotSession {
     this.pending.delete(permissionId);
     entry.resolve(option ? { outcome: { outcome: "selected", optionId: option.optionId } } : { outcome: { outcome: "cancelled" } });
     this.permissionLog.push({ id: permissionId, subject: entry.subject, decision: response, by: "supervisor" });
-    this.#activity("permission", `${response.toUpperCase()} ${entry.subject}`);
+    this.#activity("permission", `${response.toUpperCase()} ${this.relative(entry.subject)}`);
     this.#wake();
     return true;
   }
@@ -345,7 +365,7 @@ export class CopilotSession {
   recentTools(n = 5) {
     const turn = this.turn ?? this.lastTurn;
     if (!turn) return [];
-    return [...turn.tools.values()].slice(-n).map((t) => `${t.kind ?? "tool"} ${t.title ?? ""} (${t.status ?? "?"})`.trim());
+    return [...turn.tools.values()].slice(-n).map((t) => `${this.describeTool(t)} (${t.status ?? "?"})`);
   }
 
   #wake() {
@@ -382,15 +402,17 @@ export class CopilotSession {
       }
       case "tool_call": {
         if (!turn) return;
+        const raw = update.rawInput ?? {};
         const entry = {
           id: update.toolCallId,
           title: update.title ?? null,
           kind: update.kind ?? null,
           status: update.status ?? "pending",
-          input: summarizeInput(update.rawInput),
+          command: typeof raw.command === "string" ? raw.command.replace(/\s+/g, " ").slice(0, 200) : null,
+          path: [raw.path, raw.fileName, raw.file_path, update.locations?.[0]?.path].find((p) => typeof p === "string") ?? null,
         };
         turn.tools.set(update.toolCallId, entry);
-        this.#activity("tool", `${entry.kind ?? "tool"} ${entry.title ?? ""}${entry.input ? ` ${entry.input}` : ""} (${entry.status})`);
+        this.#activity("tool", `${this.describeTool(entry)} (${entry.status})`);
         return;
       }
       case "tool_call_update": {
@@ -402,7 +424,7 @@ export class CopilotSession {
         turn.tools.set(update.toolCallId, entry);
         if (update.status && update.status !== previous && (update.status === "completed" || update.status === "failed")) {
           const detail = update.status === "failed" ? update.rawOutput?.message ?? "" : outputPreview(update);
-          this.#activity("tool", `${entry.kind ?? "tool"} ${entry.title ?? ""} (${update.status})${detail ? ` → ${detail}` : ""}`);
+          this.#activity("tool", `${this.describeTool(entry)} (${update.status})${detail ? ` → ${detail}` : ""}`);
         }
         return;
       }
@@ -443,12 +465,12 @@ export class CopilotSession {
       const kind = RESPONSE_KINDS[decision];
       const option = options.find((o) => o.kind === kind);
       this.permissionLog.push({ id: toolCall.toolCallId ?? null, subject, decision, by });
-      this.#activity("permission", `${decision === "reject" ? "AUTO-REJECT" : "AUTO-APPROVE"} ${subject}`);
+      this.#activity("permission", `${decision === "reject" ? "AUTO-REJECT" : "AUTO-APPROVE"} ${this.relative(subject)}`);
       return option ? { outcome: { outcome: "selected", optionId: option.optionId } } : { outcome: { outcome: "cancelled" } };
     }
 
     const id = toolCall.toolCallId ?? `perm-${Date.now().toString(36)}-${this.pending.size}`;
-    this.#activity("permission", `ASKED id=${id} ${subject}`);
+    this.#activity("permission", `ASKED id=${id} ${this.relative(subject)}`);
     return new Promise((resolve) => {
       this.pending.set(id, {
         id,
@@ -464,24 +486,11 @@ export class CopilotSession {
   }
 }
 
-function summarizeInput(raw) {
-  if (raw == null) return "";
-  if (typeof raw === "string") return raw.replace(/\s+/g, " ").slice(0, 160);
-  if (typeof raw.command === "string") return raw.command.replace(/\s+/g, " ").slice(0, 160);
-  const file = raw.path ?? raw.fileName ?? raw.file_path;
-  if (typeof file === "string") return file;
-  try {
-    return JSON.stringify(raw).slice(0, 160);
-  } catch {
-    return "";
-  }
-}
-
 function outputPreview(update) {
   const content = Array.isArray(update.content) ? update.content : [];
   for (const part of content) {
     const text = part?.content?.text ?? part?.text;
-    if (typeof text === "string" && text.trim()) return text.replace(/\s+/g, " ").trim().slice(0, 160);
+    if (typeof text === "string" && text.trim()) return text.replace(/<shellId:[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 120);
   }
   return "";
 }

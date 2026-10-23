@@ -2,7 +2,8 @@
 // outcome as additionalContext so the main thread sees completion / permission
 // requests without re-reading raw tool output.
 //
-// stdin: { tool_name, tool_response }
+// stdin: { tool_name, tool_response } — a single wait/status result, or a
+// waitAll batch ({ results: [...] }) reported session by session.
 // stdout (only when relevant): { hookSpecificOutput: { hookEventName:
 //   "PostToolUse", additionalContext } } — exit 0 always, silent otherwise.
 
@@ -60,7 +61,9 @@ function contextFor(payload) {
     const parts = [
       "Delegated Copilot session finished (idle).",
       payload.response ? `Final message: ${String(payload.response).slice(0, 400)}` : null,
-      `Before trusting success: read the job report${payload.report?.path ? ` (${payload.report.path})` : " under .cp-reports/"}, check the files it lists exist, and re-run any read-only verification command yourself.`,
+      payload.reportMissing
+        ? "The worker wrote NO report, which the contract requires: treat the run as unverified — check the diff and re-run the verification yourself before reporting success."
+        : `Before trusting success: read the job report${payload.report?.path ? ` (${payload.report.path})` : " under .cp-reports/"}, check the files it lists exist, and re-run any read-only verification command yourself.`,
     ].filter(Boolean);
     return parts.join(" ");
   }
@@ -102,6 +105,20 @@ function contextFor(payload) {
   return null;
 }
 
+/**
+ * waitAll returns one result per session: report each session that needs
+ * attention, prefixed with its id.
+ */
+function contextForBatch(results) {
+  const parts = results
+    .map((r) => {
+      const text = contextFor(r);
+      return text ? `[session ${r?.sessionID ?? "?"}${r?.jobId ? ` / job ${r.jobId}` : ""}]\n${text}` : null;
+    })
+    .filter(Boolean);
+  return parts.length > 0 ? parts.join("\n\n") : null;
+}
+
 const raw = readStdin();
 let parsedInput = null;
 try {
@@ -110,7 +127,7 @@ try {
 
 if (parsedInput && matchesTool(parsedInput.tool_name ?? "", RELEVANT_TOOLS)) {
   const payload = extractPayload(raw);
-  const context = contextFor(payload);
+  const context = Array.isArray(payload?.results) ? contextForBatch(payload.results) : contextFor(payload);
   if (context) {
     process.stdout.write(
       JSON.stringify({

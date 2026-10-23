@@ -79,3 +79,5 @@ after major CLI upgrades (`npm run test:e2e` covers the happy path).
 |---|---|---|
 | Live e2e: write `src/sum.js` + a node:test, run `npm test`, write the report | claude-haiku-4.5, effort low | completed in one turn, one permission ask (`mkdir -p`), 6.01 AI credits / 0.33 premium requests |
 | `/copilot:review` of a two-bug diff | claude-haiku-4.5, effort low | both bugs found, schema-valid JSON, 1.84 AI credits |
+| Live e2e (same task) | claude-haiku-5.5, effort low | completed, one permission ask, 0.77 AI credits / 1 premium request |
+| README demo: `src/slugify.js` + 3 node:test cases | claude-haiku-5.5, effort medium | completed, 3/3 tests, 0.56 AI credits / 1 premium request |

@@ -158,7 +158,17 @@ export function createActivitySink() {
         const current = open.get(jobId) ?? { kind, text: "" };
         current.text += text;
         open.set(jobId, current);
-        if (current.text.includes("\n") || current.text.length >= MAX_LINE_CHARS) closeStream(jobId);
+        // Close the line at the last newline and keep what follows open, so
+        // the next line starts where the text does, not mid-word.
+        const cut = current.text.lastIndexOf("\n");
+        if (cut >= 0) {
+          const rest = current.text.slice(cut + 1);
+          current.text = current.text.slice(0, cut);
+          closeStream(jobId);
+          if (rest) open.set(jobId, { kind, text: rest });
+        } else if (current.text.length >= MAX_LINE_CHARS) {
+          closeStream(jobId);
+        }
         return;
       }
       closeStream(jobId);
@@ -186,25 +196,25 @@ export function createActivitySink() {
   }
 
   /**
-   * Compact one-line summary for MCP progress frames: latest reasoning,
-   * newest tool transition and assistant tail joined with separators.
+   * One-line summary for MCP progress frames: the most recent thing the
+   * worker did (a line still being streamed counts as the most recent).
    */
   function summary(key) {
     const owner = owners.get(key);
     const live = owner ? open.get(owner.jobId) : null;
-    const arr = buffers.get(key) ?? [];
-    let reasoning = live?.kind === "reasoning" ? clean(live.text) : "";
-    let text = live?.kind === "assistant" ? clean(live.text) : "";
-    let tool = "";
-    for (let i = arr.length - 1; i >= 0; i--) {
-      const line = arr[i];
-      const body = line.replace(/^\[[\d:.]+\] \[\w+\] /, "");
-      if (!tool && line.includes("[tool]")) tool = body;
-      if (!reasoning && line.includes("[reasoning]")) reasoning = body;
-      if (!text && line.includes("[assistant]")) text = body;
-      if (reasoning && tool && text) break;
+    const clip = (text) => (text.length > 160 ? `${text.slice(0, 159)}…` : text);
+    // A line still streaming wins once it says something; a fresh fragment
+    // would only show the first few words of a sentence.
+    if (live && clean(live.text).length >= 40) {
+      const text = clean(live.text);
+      return `${live.kind}: ${text.length > 160 ? `…${text.slice(-159)}` : text}`;
     }
-    return [reasoning && `…${reasoning.slice(-140)}`, tool, text && `${text.slice(0, 140)}…`].filter(Boolean).join(" · ");
+    const arr = buffers.get(key) ?? [];
+    for (let i = arr.length - 1; i >= 0; i--) {
+      const m = /^\[[\d:.]+\] \[(\w+)\] (.*)$/.exec(arr[i]);
+      if (m && ["tool", "assistant", "reasoning", "permission", "plan"].includes(m[1])) return `${m[1]}: ${clip(m[2])}`;
+    }
+    return "";
   }
 
   return { bind, record, tail, summary, flush: persist };

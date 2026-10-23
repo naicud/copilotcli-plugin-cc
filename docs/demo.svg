@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="580" viewBox="0 0 1000 580" role="img" aria-label="Recorded run: Claude's MCP server delegates a task to a GitHub Copilot CLI worker, supervises it live, verifies the result and reports the AI credits used">
+  <style>
+  text { font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }
+  .fg { fill: #e6edf3; } .dim { fill: #7d8590; } .green { fill: #3fb950; }
+  .yellow { fill: #d29922; } .cyan { fill: #79c0ff; } .red { fill: #f85149; }
+  .b { font-weight: 700; }
+  .ln { opacity: 0; animation: appear 0.15s ease-out forwards; }
+  @keyframes appear { to { opacity: 1; } }
+  </style>
+  <rect x="0.5" y="0.5" width="999" height="579" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <path d="M0.5 12.5 A12 12 0 0 1 12.5 0.5 H987.5 A12 12 0 0 1 999.5 12.5 V40 H0.5 Z" fill="#161b22" stroke="#30363d"/>
+  <circle cx="22" cy="20" r="6" fill="#ff5f57"/>
+  <circle cx="42" cy="20" r="6" fill="#febc2e"/>
+  <circle cx="62" cy="20" r="6" fill="#28c840"/>
+  <text x="500" y="24" text-anchor="middle" class="dim" style="font-size:12px">copilotcli-plugin-cc — recorded delegation run</text>
+  <text x="24" y="58"><tspan class="green b">❯</tspan><tspan class="fg"> node plugins/copilot/scripts/demo-delegate.mjs</tspan></text>
+  <text class="ln" style="animation-delay:0.95s" x="24" y="78"><tspan class="fg b">copilot delegation runtime</tspan><tspan class="fg"> </tspan><tspan class="dim">— copilot-delegate, MCP over stdio</tspan></text>
+  <text class="ln" style="animation-delay:1.30s" x="24" y="98"><tspan class="green">✓</tspan><tspan class="fg"> 12 MCP tools </tspan><tspan class="dim">models delegate fanOut wait waitAll status logs diff respond abort shutdown doctor</tspan></text>
+  <text class="ln" style="animation-delay:1.65s" x="24" y="118"><tspan class="green">✓</tspan><tspan class="fg"> 19 models from the live Copilot catalog </tspan><tspan class="dim">(per tier 0:1 1:12 2:2 3:4)</tspan><tspan class="fg"> · using </tspan><tspan class="fg b">claude-haiku-5.5</tspan></text>
+  <text class="ln" style="animation-delay:2.00s" x="24" y="138"></text>
+  <text class="ln" style="animation-delay:2.90s" x="24" y="158"><tspan class="fg">▸ delegate</tspan></text>
+  <text class="ln" style="animation-delay:3.25s" x="24" y="178"><tspan class="dim">  task: add src/slugify.js + node:test cases · acceptance: npm test passes</tspan></text>
+  <text class="ln" style="animation-delay:3.60s" x="24" y="198"><tspan class="green">✓</tspan><tspan class="fg"> worker started · </tspan><tspan class="fg b">claude-haiku-5.5</tspan><tspan class="fg"> </tspan><tspan class="yellow">1x</tspan><tspan class="fg"> · effort </tspan><tspan class="yellow">medium</tspan><tspan class="fg"> · session </tspan><tspan class="dim">bec34e40</tspan></text>
+  <text class="ln" style="animation-delay:3.95s" x="24" y="218"></text>
+  <text class="ln" style="animation-delay:4.85s" x="24" y="238"><tspan class="fg">▸ supervise (live MCP progress)</tspan></text>
+  <text class="ln" style="animation-delay:5.55s" x="24" y="258"><tspan class="fg">  </tspan><tspan class="cyan">↻</tspan><tspan class="fg"> </tspan><tspan class="dim">tool: $ cd . &amp;&amp; ls -la &amp;&amp; cat package.json 2&gt;/dev/null; ls src test 2&gt;/dev/null; git status --s…</tspan></text>
+  <text class="ln" style="animation-delay:6.25s" x="24" y="278"><tspan class="fg">  </tspan><tspan class="cyan">↻</tspan><tspan class="fg"> </tspan><tspan class="dim">assistant: The `src/` and `test/` directories don't exist yet, so I'll create them and retry bo…</tspan></text>
+  <text class="ln" style="animation-delay:6.60s" x="24" y="298"><tspan class="fg">  </tspan><tspan class="yellow">?</tspan><tspan class="fg"> permission mkdir -p src test .cp-reports &amp;&amp; ls -d src test .cp-reports → </tspan><tspan class="green">approved once</tspan></text>
+  <text class="ln" style="animation-delay:7.30s" x="24" y="318"><tspan class="fg">  </tspan><tspan class="cyan">↻</tspan><tspan class="fg"> </tspan><tspan class="dim">assistant: All three tests pass. Now I'll write the required report.</tspan></text>
+  <text class="ln" style="animation-delay:7.65s" x="24" y="338"><tspan class="green">✓</tspan><tspan class="fg"> worker finished · report </tspan><tspan class="fg b">STATUS: COMPLETED</tspan></text>
+  <text class="ln" style="animation-delay:8.00s" x="24" y="358"></text>
+  <text class="ln" style="animation-delay:8.90s" x="24" y="378"><tspan class="fg">▸ verify</tspan></text>
+  <text class="ln" style="animation-delay:9.25s" x="24" y="398"><tspan class="green">✓</tspan><tspan class="fg"> changed: .cp-reports/delegate-mvk7avt9-hayzs3.md, src/slugify.js, test/slugify.test.js</tspan></text>
+  <text class="ln" style="animation-delay:9.60s" x="24" y="418"><tspan class="green">✓</tspan><tspan class="fg"> tests re-run by the supervisor: </tspan><tspan class="fg b">3 passed, 0 failed</tspan></text>
+  <text class="ln" style="animation-delay:9.95s" x="24" y="438"><tspan class="green">✓</tspan><tspan class="fg"> usage: </tspan><tspan class="fg b">0.562536 AI credits</tspan><tspan class="fg"> · 1 premium request(s)</tspan></text>
+  <text class="ln" style="animation-delay:10.30s" x="24" y="458"></text>
+  <text class="ln" style="animation-delay:11.20s" x="24" y="478"><tspan class="fg">▸ shutdown</tspan></text>
+  <text class="ln" style="animation-delay:11.55s" x="24" y="498"><tspan class="green">✓</tspan><tspan class="fg"> worker closed when its turn ended · shutdown found 0 process(es) left</tspan></text>
+  <text class="ln" style="animation-delay:11.90s" x="24" y="518"></text>
+  <text class="ln" style="animation-delay:12.25s" x="24" y="538"><tspan class="green b">demo complete</tspan></text>
+</svg>

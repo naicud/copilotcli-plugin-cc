@@ -33,6 +33,8 @@ forked from opencode-plugin-cc with the OpenCode backend replaced.
   `resumeSessionID` to continue a Copilot session in a new worker
   (`session/load`).
 - `fanOut` batch and race modes; `waitAll` with early exit.
+- A run that finishes without its mandatory report is flagged `reportMissing`
+  instead of passing as a verified success.
 - Usage accounting in AI credits and premium requests per job, read from the
   session's own event log; daily budget caps (`maxDailyCredits`,
   `maxDailyPremiumRequests`).
@@ -43,10 +45,14 @@ forked from opencode-plugin-cc with the OpenCode backend replaced.
 - `copilot-delegate` and `copilot-rescue` subagents and the
   delegation/prompting/result-handling/routing/runtime/supervision skills.
 - Hooks: delegation router on `Task`/`Agent`, delegation context after
-  `wait`/`waitAll`/`status`, optional stop-time review gate, SessionEnd
-  settling of jobs whose worker is gone plus the disk hygiene sweep.
-- Test suite driven by a fake ACP agent (no credits used), and
-  `npm run test:e2e` for a live round trip against the real CLI.
+  `wait`/`waitAll`/`status` (per session for `waitAll`), optional stop-time
+  review gate, SessionEnd settling of jobs whose worker is gone plus the disk
+  hygiene sweep.
+- Activity lines and progress frames show the most recent thing the worker
+  did, with workspace-relative paths (`$ npm test`, `edit src/a.js`).
+- Test suite driven by a fake ACP agent (no credits used), `npm run test:e2e`
+  for a live round trip against the real CLI, and `npm run demo` to re-record
+  the README animation from a real run.
 
 ### Fixed (relative to the fork's starting point)
 
@@ -55,3 +61,7 @@ forked from opencode-plugin-cc with the OpenCode backend replaced.
   a hook error without blocking.
 - `diff` lists every new file instead of collapsing a new directory into
   `dir/`.
+- A working-tree review now covers staged changes too (it ran a plain
+  `git diff`, which only shows unstaged ones) and lists new files.
+- The `copilot-delegate` subagent may take enough turns to supervise long
+  jobs (`maxTurns` 12 → 100).
