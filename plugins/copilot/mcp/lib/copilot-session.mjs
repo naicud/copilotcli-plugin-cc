@@ -12,7 +12,6 @@
 // plan, and the permission requests waiting for a decision.
 
 import fs from "node:fs";
-import path from "node:path";
 import { spawnAcpAgent, ACP_PROTOCOL_VERSION, AcpError } from "./acp-client.mjs";
 import { resolveCopilotCommand } from "../../scripts/lib/copilot-bin.mjs";
 
@@ -130,7 +129,10 @@ export class CopilotSession {
     try {
       real = fs.realpathSync.native(this.cwd);
     } catch {}
-    this.cwdPrefixes = [...new Set([this.cwd, real])].filter(Boolean).map((p) => p.replace(/[\\/]+$/, "") + path.sep);
+    // Both separators, in the base and after it: tools may print forward
+    // slashes even on Windows.
+    const bases = [this.cwd, real].filter(Boolean).map((p) => p.replace(/[\\/]+$/, ""));
+    this.cwdPrefixes = [...new Set(bases.flatMap((p) => [p, p.replace(/\\/g, "/")]))].flatMap((p) => [`${p}/`, `${p}\\`]);
   }
 
   /** Text with workspace paths made relative, for display only. */

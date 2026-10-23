@@ -72,6 +72,9 @@ describe("permission classification", () => {
     assert.equal(s.describeTool({ kind: "execute", command: "ls /work/repo/src" }), "$ ls src");
     assert.equal(s.describeTool({ kind: "edit", path: "/work/repo/src/a.js", title: "Editing ...repo/src/a.js" }), "edit src/a.js");
     assert.equal(s.describeTool({ kind: "fetch", title: "Fetch docs" }), "fetch Fetch docs");
+    const win = new CopilotSession({ cwd: "C:\\work\\repo" });
+    assert.equal(win.describeTool({ kind: "edit", path: "C:\\work\\repo\\src\\a.js" }), "edit src\\a.js");
+    assert.equal(win.describeTool({ kind: "execute", command: "type C:/work/repo/README.md" }), "$ type README.md");
   });
 
   it("builds the worker command line", () => {
